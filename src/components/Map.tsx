@@ -55,7 +55,7 @@ const Map = () => {
     newLat: number,
     newLng: number
   ) => {
-    updateMarkerById(markerId, newLat, newLng);
+    await updateMarkerById(markerId, newLat, newLng);
     fetchMarkers();
   };
 

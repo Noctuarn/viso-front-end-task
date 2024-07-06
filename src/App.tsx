@@ -1,5 +1,4 @@
 import Map from "./components/Map";
-import MarkerList from "./components/MarkerList";
 
 const App = () => {
   return (
