@@ -1,25 +1,59 @@
-import MapGl from "react-map-gl";
-import { MapMouseEvent } from "mapbox-gl";
-import { useEffect, useState } from "react";
-import { useFetchMarkerData } from "../hooks/useFetchMarketData";
+import { useState } from "react";
+import { useFetchMarkerData } from "../hooks/useFetchMarkersData";
+import { useDeleteMarkerById } from "../hooks/useDeleteMarkerById";
+import { useAddMarker } from "../hooks/useAddMarker";
 
-import "mapbox-gl/dist/mapbox-gl.css";
 import MapMarker from "./MapMarker";
+import MarkerList from "./MarkerList";
+import "mapbox-gl/dist/mapbox-gl.css";
+import MapGl, { MapMouseEvent } from "react-map-gl";
+import { useDeleteAllMarkers } from "../hooks/useDeleteAllMarkers";
+import { useUpdateMarker } from "../hooks/useUpdateMarker";
 
 const Map = () => {
+  //* Initial viewport for the map (Ukraine)
   const [viewport, setViewport] = useState({
     longitude: 32.0,
     latitude: 49.0,
     zoom: 5,
   });
 
-  const { markersData, loading } = useFetchMarkerData();
+  //* Markers CRUD
+  const { markersData, loading, fetchMarkers } = useFetchMarkerData();
+  const { deleteMarkerHandler } = useDeleteMarkerById();
+  const { addMarker } = useAddMarker();
+  const { deleteAllMarkers } = useDeleteAllMarkers();
+  const { updateMarkerById } = useUpdateMarker();
 
-  useEffect(() => {
-    if (!loading) {
-      console.log(markersData);
+
+  //* Handlers for CRUD operations
+  const handleMarkerDelete = async (markerId: string) => {
+    try {
+      await deleteMarkerHandler(markerId);
+      await fetchMarkers();
+    } catch (error) {
+      console.error("Error deleting marker:", error);
     }
-  }, [loading, markersData]);
+  };
+
+  const handleMarkerAdd = async (e: MapMouseEvent) => {
+    await addMarker(e);
+    await fetchMarkers();
+  };
+
+  const handleAllMarkersDelete = async () => {
+    await deleteAllMarkers();
+    fetchMarkers();
+  };
+
+  const handleMarkerUpdate = async (
+    markerId: string,
+    newLat: number,
+    newLng: number
+  ) => {
+    updateMarkerById(markerId, newLat, newLng);
+    fetchMarkers();
+  };
 
   return (
     <div>
@@ -30,12 +64,21 @@ const Map = () => {
         style={{ width: "100vw", height: "50vh" }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
         doubleClickZoom={false}
+        onDblClick={handleMarkerAdd}
       >
-        {markersData.map(m => (
-          <MapMarker id={m.id} key={m.id} Location={m.Location} Timestamp={m.Timestamp}/>
+        {markersData.map((m) => (
+          <MapMarker
+           handleMarkerUpdate={handleMarkerUpdate}
+           markerData={m}
+          />
         ))}
       </MapGl>
       {loading && <div>Loading markers...</div>}
+      <MarkerList
+        data={markersData}
+        handleMarkerDelete={handleMarkerDelete}
+        handleAllMarkersDelete={handleAllMarkersDelete}
+      />
     </div>
   );
 };
